@@ -35,6 +35,10 @@ django==6.0rc1 \
     --hash=sha256:28d47cddbb7ef9c39ad7441c72e6c2d47a487397780ae9e75a4774fe20ac1a7d \
     --hash=sha256:d37fc9cf38a30a20634ca7bc18580cb86351b01e51eda4e06dc66ab9ffe2e7d8
     # via idontneedit
+django-dotenv==1.4.2 \
+    --hash=sha256:3812bb0f4876cf31f902aad140f0645e120e51ee30eb7c40c22050f58a0e4adb \
+    --hash=sha256:a9b1b40a70bd321acd231926acedb9bd2c5e873e33a1873b34a7276d196a765e
+    # via idontneedit
 filelock==3.20.0 \
     --hash=sha256:339b4732ffda5cd79b13f4e2711a31b0365ce445d95d243bb996273d072546a2 \
     --hash=sha256:711e943b4ec6be42e1d4e6690b48dc175c822967466bb31c0c293f34334c13f4

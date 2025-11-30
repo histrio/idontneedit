@@ -90,6 +90,15 @@ wheels = [
 ]
 
 [[package]]
+name = "django-dotenv"
+version = "1.4.2"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/82/18/b1d0bb605a5737e9a62c5135cf4bc234a5186abfbe1b06706ea68f235f32/django-dotenv-1.4.2.tar.gz", hash = "sha256:3812bb0f4876cf31f902aad140f0645e120e51ee30eb7c40c22050f58a0e4adb", size = 4295, upload-time = "2017-12-11T16:44:36.177Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/e4/af/d9175f2b40a9bcd700db2861610d6ed48c2795ffba46c1d6abf25f7c1dea/django_dotenv-1.4.2-py2.py3-none-any.whl", hash = "sha256:a9b1b40a70bd321acd231926acedb9bd2c5e873e33a1873b34a7276d196a765e", size = 3794, upload-time = "2017-12-11T16:44:32.658Z" },
+]
+
+[[package]]
 name = "filelock"
 version = "3.20.0"
 source = { registry = "https://pypi.org/simple" }
@@ -125,6 +134,7 @@ version = "0.1.0"
 source = { virtual = "." }
 dependencies = [
     { name = "django" },
+    { name = "django-dotenv" },
     { name = "gunicorn" },
 ]
 
@@ -137,6 +147,7 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "django", specifier = "==6.0rc1" },
+    { name = "django-dotenv", specifier = ">=1.4.2" },
     { name = "gunicorn", specifier = ">=23.0.0" },
 ]
 
