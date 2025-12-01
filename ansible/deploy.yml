@@ -3,7 +3,6 @@
 
   vars:
     dest: /srv/idontneedit/app
-    venv: /srv/idontneedit/venv
     ssh_port: 22
 
   vars_files:
@@ -99,135 +98,121 @@
         state: present
         update_cache: yes
 
-    - name: install systemd unit
-      copy:
-        src: idontneedit.service
-        dest: /etc/systemd/system/idontneedit.service
-        owner: root
-        group: root
-        mode: 644
-
-    - name: upload env file
-      ansible.builtin.template:
-        src: env.j2
-        dest: /srv/idontneedit/env
-        owner: deploy
-        group: deploy
-        mode: "0600"
-      become: yes
-
-    - name: reload systemd
-      command: systemctl daemon-reload
-
-    - name: enable service
-      systemd:
-        name: idontneedit
-        enabled: yes
-
-    - name: ensure dirs
-      file:
+    - name: ensure project dirs
+      ansible.builtin.file:
         path: "{{ item }}"
         state: directory
         owner: deploy
         group: www-data
         mode: '0755'
       loop:
-        - /srv/idontneedit/static
-        - /srv/idontneedit/media
-        - /srv/idontneedit/logs
-        - /srv/idontneedit/venv
-        - /srv/idontneedit/app
-        - /srv/idontneedit/run
+        - "{{ dest }}"
+        - "{{ dest }}/ansible"
 
-    - name: copy application files
-      ansible.posix.synchronize:
-        src: "{{ playbook_dir }}/../"
-        dest: "{{ dest }}"
-        delete: yes
-        owner: no
-        group: no
-        rsync_opts:
-          - "--exclude=.git"
-          - "--exclude=__pycache__"
-          - "--exclude=*.pyc"
-          - "--exclude=.env"
-          - "--exclude=db.sqlite3"
-          - "--exclude=venv"
-          - "--exclude=.venv"
-          - "--exclude=ansible/"
-          - "--chown=deploy:www-data"
-        rsync_path: "rsync"
+    - name: copy docker-compose.yml
+      ansible.builtin.copy:
+        src: "{{ playbook_dir }}/../docker-compose.yml"
+        dest: "{{ dest }}/docker-compose.yml"
+        owner: deploy
+        group: www-data
+        mode: '0644'
 
-    - name: ensure database file exists with correct permissions
+    - name: copy Caddyfile for proxy
+      ansible.builtin.copy:
+        src: "{{ playbook_dir }}/Caddyfile"
+        dest: "{{ dest }}/ansible/Caddyfile"
+        owner: deploy
+        group: www-data
+        mode: '0644'
+
+    - name: upload env file for Docker Compose
+      ansible.builtin.template:
+        src: env.j2
+        dest: "{{ dest }}/.env"
+        owner: deploy
+        group: deploy
+        mode: "0600"
+      become: yes
+
+    - name: ensure database file exists with permissive permissions (for container write)
       ansible.builtin.file:
         path: "{{ dest }}/db.sqlite3"
         owner: deploy
         group: www-data
-        mode: '0644'
+        mode: '0666'
         state: touch
         modification_time: preserve
         access_time: preserve
 
-    - name: ensure python3-venv is installed
+    - name: ensure prerequisites for Docker repo
       ansible.builtin.package:
         name:
-          - python3
-          - python3-venv
+          - ca-certificates
+          - curl
+          - gnupg
         state: present
         update_cache: yes
 
-    - name: create venv
-      ansible.builtin.command: python3 -m venv "{{ venv }}"
+    - name: ensure /etc/apt/keyrings exists
+      ansible.builtin.file:
+        path: /etc/apt/keyrings
+        state: directory
+        mode: "0755"
+
+    - name: add Docker APT GPG key (Ubuntu)
+      ansible.builtin.shell: "curl -fsSL https://download.docker.com/linux/ubuntu/gpg | gpg --dearmor -o /etc/apt/keyrings/docker.gpg"
       args:
-        creates: "{{ venv }}/bin/activate"
-      become_user: deploy
+        creates: /etc/apt/keyrings/docker.gpg
 
-    - name: install dependencies
-      become_user: deploy
-      ansible.builtin.command: "{{ venv }}/bin/pip install -r requirements.txt"
-      args:
-        chdir: "{{ dest }}"
+    - name: add Docker APT repository (Ubuntu)
+      ansible.builtin.apt_repository:
+        repo: "deb [arch=amd64 signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu {{ ansible_lsb.codename }} stable"
+        filename: docker
+        state: present
 
-    - name: run migrations
-      ansible.builtin.command: "{{ venv }}/bin/python manage.py migrate --noinput"
-      args:
-        chdir: "{{ dest }}"
-      become_user: deploy
-
-    - name: collect static
-      become_user: deploy
-      ansible.builtin.command: "{{ venv }}/bin/python manage.py collectstatic --noinput"
-      args:
-        chdir: "{{ dest }}"
-
-    - name: restart service
-      ansible.builtin.systemd:
-        name: idontneedit
-        state: restarted
-
-    - name: install Caddy
-      apt:
-        name: caddy
+    - name: install Docker engine and plugins from Docker repo
+      ansible.builtin.package:
+        name:
+          - docker-ce
+          - docker-ce-cli
+          - containerd.io
+          - docker-buildx-plugin
+          - docker-compose-plugin
         state: present
         update_cache: yes
 
-    - name: install Caddyfile
-      copy:
-        src: Caddyfile
-        dest: /etc/caddy/Caddyfile
-        owner: root
-        group: root
-        mode: '0644'
-        backup: yes
+    - name: add deploy user to docker group
+      ansible.builtin.user:
+        name: deploy
+        groups: docker
+        append: yes
 
-    - name: enable and start caddy
+    - name: start and enable docker service
       ansible.builtin.systemd:
-        name: caddy
+        name: docker
         enabled: yes
-        state: restarted
+        state: started
 
-    - name: Run deployment checks
-      ansible.builtin.command: "{{ venv }}/bin/python manage.py check --deploy --fail-level=WARNING"
+    - name: pull latest images via Docker Compose
+      ansible.builtin.command: docker compose pull
+      args:
+        chdir: "{{ dest }}"
+      become_user: deploy
+
+    - name: bring up stack via Docker Compose (force recreate)
+      ansible.builtin.command: docker compose up -d --force-recreate
+      args:
+        chdir: "{{ dest }}"
+      become_user: deploy
+
+    - name: run database migrations
+      ansible.builtin.command: docker compose exec -T app python manage.py migrate --noinput
+      args:
+        chdir: "{{ dest }}"
+      become_user: deploy
+
+    - name: collect static files into shared volume
+      ansible.builtin.command: docker compose exec -T app python manage.py collectstatic --noinput
       args:
         chdir: "{{ dest }}"
       become_user: deploy
