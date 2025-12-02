@@ -49,6 +49,8 @@ services:
       - static-data:/app/static:ro
       - caddy-data:/data
       - caddy-config:/config
+    env_file:
+      - .env
     restart: unless-stopped
 
 volumes:
