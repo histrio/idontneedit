@@ -19,8 +19,10 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # Initialize environ
 env = environ.Env(DJANGO_DEBUG=(bool, False))
 
-# Read .env file if it exists
-environ.Env.read_env(BASE_DIR / ".env")
+# Only read .env file in development
+DEBUG = env.bool("DJANGO_DEBUG", default=False)
+if DEBUG:
+    environ.Env.read_env(BASE_DIR / ".env")
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/dev/howto/deployment/checklist/
@@ -28,8 +30,6 @@ environ.Env.read_env(BASE_DIR / ".env")
 SECRET_KEY = env(
     "DJANGO_SECRET_KEY", default="django-insecure-please-change-me-in-production"
 )
-
-DEBUG = env.bool("DJANGO_DEBUG", default=False)
 
 ALLOWED_HOSTS = [
     "idontneedit.org.ru",
@@ -98,7 +98,7 @@ else:
             "ENGINE": "django.db.backends.postgresql",
             "NAME": env("POSTGRES_DB", default="idontneedit"),
             "USER": env("POSTGRES_USER", default="idontneedit"),
-            "PASSWORD": env("POSTGRES_PASSWORD"),
+            "PASSWORD": env("POSTGRES_PASSWORD", default=""),
             "HOST": env("POSTGRES_HOST", default="postgres"),
             "PORT": env("POSTGRES_PORT", default="5432"),
         }
