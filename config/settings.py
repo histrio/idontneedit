@@ -16,20 +16,31 @@ import environ
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-# Initialize environ
-env = environ.Env(DJANGO_DEBUG=(bool, False))
+env = environ.Env(
+    DJANGO_PRODUCTION=(bool, False),
+    DJANGO_DEBUG=(bool, False),
+    DJANGO_SECRET_KEY=(str, "django-insecure-please-change-me-in-production"),
+    POSTGRES_DB=(str, "idontneedit"),
+    POSTGRES_USER=(str, "idontneedit"),
+    POSTGRES_PASSWORD=(str, ""),
+    POSTGRES_HOST=(str, "postgres"),
+    POSTGRES_PORT=(str, "5432"),
+    DJANGO_STATIC_ROOT=(str, "/app/static/"),
+)
 
-# Only read .env file in development
-DEBUG = env.bool("DJANGO_DEBUG", default=False)
-if DEBUG:
+PRODUCTION = env.bool("DJANGO_PRODUCTION")
+if not PRODUCTION:
     environ.Env.read_env(BASE_DIR / ".env")
+
+if PRODUCTION:
+    DEBUG = env.bool("DJANGO_DEBUG")
+else:
+    DEBUG = True
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/dev/howto/deployment/checklist/
 
-SECRET_KEY = env(
-    "DJANGO_SECRET_KEY", default="django-insecure-please-change-me-in-production"
-)
+SECRET_KEY = env.str("DJANGO_SECRET_KEY")
 
 ALLOWED_HOSTS = [
     "idontneedit.org.ru",
@@ -84,7 +95,6 @@ WSGI_APPLICATION = "config.wsgi.application"
 # https://docs.djangoproject.com/en/dev/ref/settings/#databases
 
 if DEBUG:
-    # Use SQLite for development
     DATABASES = {
         "default": {
             "ENGINE": "django.db.backends.sqlite3",
@@ -92,15 +102,14 @@ if DEBUG:
         }
     }
 else:
-    # Use Postgres for production
     DATABASES = {
         "default": {
             "ENGINE": "django.db.backends.postgresql",
-            "NAME": env("POSTGRES_DB", default="idontneedit"),
-            "USER": env("POSTGRES_USER", default="idontneedit"),
-            "PASSWORD": env("POSTGRES_PASSWORD", default=""),
-            "HOST": env("POSTGRES_HOST", default="postgres"),
-            "PORT": env("POSTGRES_PORT", default="5432"),
+            "NAME": env.str("POSTGRES_DB"),
+            "USER": env.str("POSTGRES_USER"),
+            "PASSWORD": env.str("POSTGRES_PASSWORD"),
+            "HOST": env.str("POSTGRES_HOST"),
+            "PORT": env.str("POSTGRES_PORT"),
         }
     }
 
@@ -141,7 +150,7 @@ USE_TZ = True
 
 STATIC_URL = "static/"
 
-STATIC_ROOT = env("DJANGO_STATIC_ROOT", default="/app/static/")
+STATIC_ROOT = env.str("DJANGO_STATIC_ROOT")
 
 CSRF_TRUSTED_ORIGINS = ["https://idontneedit.org.ru"]
 

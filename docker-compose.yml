@@ -24,6 +24,8 @@ services:
       - "8000:8000"
     env_file:
       - .env
+    environment:
+      DJANGO_PRODUCTION: "true"
     volumes:
       - static-data:/app/static
     healthcheck:
@@ -47,8 +49,6 @@ services:
       - static-data:/app/static:ro
       - caddy-data:/data
       - caddy-config:/config
-    env_file:
-      - .env
     restart: unless-stopped
 
 volumes:
