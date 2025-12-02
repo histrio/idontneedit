@@ -9,3 +9,6 @@ services:
       - static-data:/app/static
       - /app/.venv
       - /app/__pycache__
+  caddy:
+    environment:
+      SITE_DOMAIN: localhost
