@@ -1,13 +1,8 @@
 import pytest
-from django.test import Client
 from django.urls import reverse
 from unittest.mock import patch
 
-
-@pytest.fixture
-def client():
-    """Provide a Django test client."""
-    return Client()
+# Use pytest-django's built-in `client` fixture
 
 
 @pytest.mark.django_db
