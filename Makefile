@@ -8,6 +8,18 @@ server: .env
 db:
 	@$(MNG) migrate
 
+.PHONY: test
+test:
+	@uv run pytest
+
+.PHONY: test-cov
+test-cov:
+	@uv run pytest --cov-report=term --cov-report=html
+
+.PHONY: test-cov-xml
+test-cov-xml:
+	@uv run pytest --cov-report=xml
+
 requirements.txt: uv.lock
 	@uv export --frozen --output-file=$@
 
