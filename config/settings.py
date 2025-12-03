@@ -11,20 +11,36 @@ https://docs.djangoproject.com/en/dev/ref/settings/
 """
 
 from pathlib import Path
-import os
+import environ
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
+env = environ.Env(
+    DJANGO_PRODUCTION=(bool, False),
+    DJANGO_DEBUG=(bool, False),
+    DJANGO_SECRET_KEY=(str, "django-insecure-please-change-me-in-production"),
+    POSTGRES_DB=(str, "idontneedit"),
+    POSTGRES_USER=(str, "idontneedit"),
+    POSTGRES_PASSWORD=(str, ""),
+    POSTGRES_HOST=(str, "postgres"),
+    POSTGRES_PORT=(str, "5432"),
+    DJANGO_STATIC_ROOT=(str, "/app/static/"),
+)
+
+PRODUCTION = env.bool("DJANGO_PRODUCTION")
+if not PRODUCTION:
+    environ.Env.read_env(BASE_DIR / ".env")
+
+if PRODUCTION:
+    DEBUG = env.bool("DJANGO_DEBUG")
+else:
+    DEBUG = True
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/dev/howto/deployment/checklist/
 
-SECRET_KEY = os.getenv(
-    "DJANGO_SECRET_KEY", "django-insecure-please-change-me-in-production"
-)
-
-DEBUG = os.getenv("DJANGO_DEBUG", "False").lower() in {"1", "true", "yes"}
+SECRET_KEY = env.str("DJANGO_SECRET_KEY")
 
 ALLOWED_HOSTS = [
     "idontneedit.org.ru",
@@ -78,12 +94,24 @@ WSGI_APPLICATION = "config.wsgi.application"
 # Database
 # https://docs.djangoproject.com/en/dev/ref/settings/#databases
 
-DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.sqlite3",
-        "NAME": BASE_DIR / "db.sqlite3",
+if DEBUG:
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.sqlite3",
+            "NAME": BASE_DIR / "db.sqlite3",
+        }
     }
-}
+else:
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.postgresql",
+            "NAME": env.str("POSTGRES_DB"),
+            "USER": env.str("POSTGRES_USER"),
+            "PASSWORD": env.str("POSTGRES_PASSWORD"),
+            "HOST": env.str("POSTGRES_HOST"),
+            "PORT": env.str("POSTGRES_PORT"),
+        }
+    }
 
 
 # Password validation
@@ -122,11 +150,12 @@ USE_TZ = True
 
 STATIC_URL = "static/"
 
-STATIC_ROOT = os.getenv("DJANGO_STATIC_ROOT", "/srv/idontneedit/static/")
+STATIC_ROOT = env.str("DJANGO_STATIC_ROOT")
 
 CSRF_TRUSTED_ORIGINS = ["https://idontneedit.org.ru"]
 
 if not DEBUG:
+    SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
     SECURE_HSTS_SECONDS = 31536000  # 1 year
     SECURE_HSTS_INCLUDE_SUBDOMAINS = True
     SECURE_HSTS_PRELOAD = True

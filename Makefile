@@ -15,3 +15,17 @@ requirements.txt: uv.lock
 	@test -r .env \
 		&& echo "Your .env is older than .env.example" \
 		|| cp .env.example .env
+
+DOCKER?=docker
+IMAGE_REPO:=histrio/idontneedit
+IMAGE_TAG?=$(shell git rev-parse --short HEAD)
+LATEST_TAG?=latest
+
+.PHONY: image.build
+image.build:
+	@$(DOCKER) build -t $(IMAGE_REPO):$(IMAGE_TAG) -t $(IMAGE_REPO):$(LATEST_TAG) .
+
+.PHONY: image.push
+image.push:
+	@$(DOCKER) push $(IMAGE_REPO):$(IMAGE_TAG)
+	@$(DOCKER) push $(IMAGE_REPO):$(LATEST_TAG)

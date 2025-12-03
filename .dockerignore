@@ -1,0 +1,33 @@
+# Ignore VCS
+.git
+.gitignore
+
+# Python artifacts
+__pycache__/
+*.py[cod]
+*.pyc
+*.pyo
+*.pyd
+*.so
+
+# Local env & tooling
+.env
+.env.*
+venv/
+.virtualenv/
+.cache/
+.mypy_cache/
+.pytest_cache/
+.coverage
+
+# Django/SQLite development DB (use real DB in production)
+db.sqlite3
+
+# Node / misc
+node_modules/
+
+# Ansible deployment artifacts (not needed in runtime image)
+ansible/
+
+# Other
+*.log
